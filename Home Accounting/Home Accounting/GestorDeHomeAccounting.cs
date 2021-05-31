@@ -5,7 +5,6 @@ public class GestorDeHomeAccounting
 {
     Pantalla pan = new Pantalla();
     ListaDeGastosYPrevisiones lista;
-    List<Gasto> gastosAExportar = new List<Gasto>();
     ExportacionDatos exportador = new ExportacionDatos();
     DateTime fechaVisualizar = DateTime.Now;
     Gasto gastoAux;
@@ -69,53 +68,82 @@ public class GestorDeHomeAccounting
 
     private void MenuGastos()
     {
-        if (iniciar)
+        pan.DibujarPantalla(visualizacionGastos);
+
+        gastoAux = pan.DibujarGastosMensuales(modoVisualizacion, lista, 
+            fechaVisualizar, posicion, inicioPagina, finPagina, 
+            conceptoABuscar, ordenacionPorFecha);
+        
+        Console.SetCursorPosition(118, 2);
+        entrada = Console.ReadKey();
+
+        switch (entrada.Key)
         {
-            lista = new ListaDeGastosYPrevisiones(uActual.GetSobrenombre());
+            case ConsoleKey.F1: Anyadir(); break;
+            case ConsoleKey.F2: Modificar(); break;
+            case ConsoleKey.F3: VerDetalle(); break;
+            case ConsoleKey.F4: VerDetalleDescripcion(); break;
+            case ConsoleKey.F5: Borrar(); break;
+            case ConsoleKey.F6: Configuracion(); break;
+            case ConsoleKey.F7: ExportarExcelCsv(); break;
+            case ConsoleKey.F8: ExportarPDF(); break;
+            case ConsoleKey.F9: visualizacionGastos = false; break;
+            case ConsoleKey.F10: Agrupar(); break;
+            case ConsoleKey.RightArrow: NavegarMeses(entrada.Key); break;
+            case ConsoleKey.LeftArrow: NavegarMeses(entrada.Key); break;
+            case ConsoleKey.UpArrow: 
+                MoverVertical(entrada.Key); break;
+            case ConsoleKey.DownArrow: 
+                MoverVertical(entrada.Key); break;
+            case ConsoleKey.F: ResetearValoresPagina(); break;
+            case ConsoleKey.S: Salir(); break;
+        }    
+    }
 
-            do
-            {
-                pan.DibujarPantalla();
-                if (visualizacionGastos)
-                {
-                    gastoAux = pan.DibujarGastosMensuales(modoVisualizacion, 
-                        lista, fechaVisualizar, posicion, inicioPagina, 
-                        finPagina, conceptoABuscar, ordenacionPorFecha);
-                }
-                else
-                {
-                    previsionAux = pan.DibujarPrevisionesMensuales(
-                        modoVisualizacion, lista, fechaVisualizar, posicion, 
-                        inicioPagina, finPagina, conceptoABuscar, 
-                        ordenacionPorFecha);
-                }
-                Console.SetCursorPosition(118, 2);
-                entrada = Console.ReadKey();
+    private void MenuPrevisiones()
+    {
+        pan.DibujarPantalla(visualizacionGastos);
 
-                switch (entrada.Key)
-                {
-                    case ConsoleKey.F1: Anyadir(); break;
-                    case ConsoleKey.F2: Modificar(); break;
-                    case ConsoleKey.F3: VerDetalle(); break;
-                    case ConsoleKey.F4: VerDetalleDescripcion(); break;
-                    case ConsoleKey.F5: Borrar(); break;
-                    case ConsoleKey.F6: Configuracion(); break;
-                    case ConsoleKey.F7: ExportarExcelCsv(); break;
-                    case ConsoleKey.F8: ExportarPDF(); break;
-                    case ConsoleKey.F9: break;
-                    case ConsoleKey.F10: Agrupar(); break;
-                    case ConsoleKey.RightArrow: NavegarMeses(entrada.Key); break;
-                    case ConsoleKey.LeftArrow: NavegarMeses(entrada.Key); break;
-                    case ConsoleKey.UpArrow: 
-                        MoverVertical(entrada.Key); break;
-                    case ConsoleKey.DownArrow: 
-                        MoverVertical(entrada.Key); break;
-                    case ConsoleKey.F: ResetearValoresPagina(); break;
-                    case ConsoleKey.S: Salir(); break;
-                }
-            } while (!terminado);
+        previsionAux = pan.DibujarPrevisionesMensuales(
+                modoVisualizacion, lista, fechaVisualizar, posicion,
+                inicioPagina, finPagina, conceptoABuscar,
+                ordenacionPorFecha);
+
+        Console.SetCursorPosition(118, 2);
+        entrada = Console.ReadKey();
+
+        switch (entrada.Key)
+        {
+            case ConsoleKey.F1: Anyadir(); break;
+            case ConsoleKey.F2: Modificar(); break;
+            case ConsoleKey.F3: VerDetalle(); break;
+            case ConsoleKey.F4: VerDetalleDescripcion(); break;
+            case ConsoleKey.F5: Borrar(); break;
+            case ConsoleKey.F6: Configuracion(); break;
+            case ConsoleKey.F7: ExportarExcelCsv(); break;
+            case ConsoleKey.F8: ExportarPDF(); break;
+            case ConsoleKey.F9: visualizacionGastos = true; break;
+            case ConsoleKey.F10: Agrupar(); break;
+            case ConsoleKey.RightArrow: NavegarMeses(entrada.Key); break;
+            case ConsoleKey.LeftArrow: NavegarMeses(entrada.Key); break;
+            case ConsoleKey.UpArrow:
+                MoverVertical(entrada.Key); break;
+            case ConsoleKey.DownArrow:
+                MoverVertical(entrada.Key); break;
+            case ConsoleKey.F: ResetearValoresPagina(); break;
+            case ConsoleKey.I: ConvertirPrevision(); break;
+            case ConsoleKey.S: Salir(); break;
         }
-        Console.WriteLine("Gracias por usar AR Software");
+    }
+
+    private void ConvertirPrevision()
+    {
+        if (previsionAux.Estado)
+        {
+            lista.Anyadir(new Gasto(previsionAux.ToDato()));
+            lista.Borrar(previsionAux);
+            lista.Guardar(uActual.GetSobrenombre());
+        }
     }
 
     private void ResetearValoresPagina()
@@ -128,7 +156,12 @@ public class GestorDeHomeAccounting
 
     private void Anyadir()
     {
-        datos = pan.DibujarMenuAnyadir(lista.GetProximoIDGasto());
+        if(visualizacionGastos)
+            datos = pan.DibujarMenuAnyadir(lista.GetProximoIDGasto(),
+                visualizacionGastos);
+        else
+            datos = pan.DibujarMenuAnyadir(lista.GetProximoIDPrevision(),
+                    visualizacionGastos);
 
         if (visualizacionGastos)
             lista.Anyadir(new Gasto(datos));
@@ -149,7 +182,7 @@ public class GestorDeHomeAccounting
                 conceptoABuscar, ordenacionPorFecha);
 
             lista.Modificar(new Gasto(pan.DibujarMenuModificar(
-                gastoAux.ToDato())));
+                gastoAux.ToDato(), visualizacionGastos)));
         }
         else
         {
@@ -158,7 +191,7 @@ public class GestorDeHomeAccounting
             conceptoABuscar, ordenacionPorFecha);
 
             lista.Modificar(new Prevision(pan.DibujarMenuModificar(
-                previsionAux.ToDato())));
+                previsionAux.ToDato(), visualizacionGastos)));
         }
 
         lista.Guardar(uActual.GetSobrenombre());
@@ -183,56 +216,106 @@ public class GestorDeHomeAccounting
     {
         posicion = pan.DibujarPeticionGasto(modoVisualizacion, 
             visualizacionGastos, lista, fechaVisualizar, ordenacionPorFecha);
-        gastoAux = pan.DibujarGastosMensuales(modoVisualizacion, lista, 
-            fechaVisualizar, posicion, inicioPagina, finPagina, conceptoABuscar,
-            ordenacionPorFecha);
-        lista.Borrar(gastoAux);
+        if (visualizacionGastos)
+        {
+            gastoAux = pan.DibujarGastosMensuales(modoVisualizacion, lista,
+                fechaVisualizar, posicion, inicioPagina, finPagina, conceptoABuscar,
+                ordenacionPorFecha);
+            lista.Borrar(gastoAux);
+        }
+        else
+        {
+            previsionAux = pan.DibujarPrevisionesMensuales(modoVisualizacion, lista,
+                fechaVisualizar, posicion, inicioPagina, finPagina, conceptoABuscar,
+                ordenacionPorFecha);
+            lista.Borrar(previsionAux);
+        }
+
         posicion = 1;
         lista.Guardar(uActual.GetSobrenombre());
     }
+
     private bool Configuracion()
     {
-        modoVisualizacion = pan.DibujarMenuConfiguracion(modoVisualizacion);
+        modoVisualizacion = pan.DibujarMenuConfiguracion(modoVisualizacion,
+            visualizacionGastos);
 
         return modoVisualizacion;
     }
 
     private void ExportarExcelCsv()
     {
-        opcion = pan.DibujarMenuExportar(
+        List<Transaccion> transAux = new List<Transaccion>();
+
+        do
+        {
+            opcion = pan.DibujarMenuExportar(
             "Pulse '1' para exportar en formato Excel.", 
-            "Pulse '2' para exportar en formato Csv.");
+            "Pulse '2' para exportar en formato Csv.", visualizacionGastos);
+        }
+        while (opcion < 1 && opcion > 2);
 
         nombreFichero = pan.DibujarPeticionNombreFichero();
 
-        if (opcion == 1)
-            exportador.GenerarExcel(lista.GetGastos(), nombreFichero);
+        if (visualizacionGastos)
+            transAux = lista.GetTransacciones(lista.GetGastos());
 
+        else
+            transAux = lista.GetTransacciones(lista.GetPrevisiones());
+
+        if (opcion == 1)
+            exportador.GenerarExcel(transAux, nombreFichero);
+            
         if (opcion == 2)
-            exportador.GenerarCsv(lista.GetGastos(), nombreFichero);
+            exportador.GenerarCsv(transAux, nombreFichero);
     }
 
     private void ExportarPDF()
     {
-        opcion = pan.DibujarMenuExportar("Pulse '1' para exportar todos los " +
-            "gastos.", "Pulse '2' para exportar los gastos del mes actual.");
+        List<Transaccion> transAux = new List<Transaccion>();
+
+        List<Gasto> gastosAExportar = new List<Gasto>();
+
+        do
+        {
+            opcion = pan.DibujarMenuExportar("Pulse '1' para exportar todos las " +
+            "transacciones.", "Pulse '2' para exportar los transacciones del " +
+            "mes actual.", visualizacionGastos);
+        }
+        while (opcion < 1 && opcion > 2);
+        
         nombreFichero = pan.DibujarPeticionNombreFichero();
 
-        if (opcion == 1)
+        if (visualizacionGastos)
         {
-            gastosAExportar = lista.GetGastos();
-            exportador.GenerarPDFGTotales(gastosAExportar, nombreFichero);
-        }
-            
+            if (opcion == 1)
+            {
+                transAux = lista.GetTransacciones(lista.GetGastos());
+                exportador.GenerarPDFTotales(transAux, nombreFichero);
+            }
 
-        if (opcion == 2)
-        {
-            gastosAExportar = lista.GetGastos(modoVisualizacion,
-                ordenacionPorFecha, fechaVisualizar);
-            exportador.GenerarPDFGMensuales(gastosAExportar, nombreFichero);
+            if (opcion == 2)
+            {
+                transAux = lista.GetTransacciones(lista.GetGastos(
+                    modoVisualizacion, ordenacionPorFecha, fechaVisualizar));
+                exportador.GenerarPDFMensuales(transAux, nombreFichero);
+            }
         }
-            
-        
+        else
+        {
+            if (opcion == 1)
+            {
+                transAux = lista.GetTransacciones(lista.GetPrevisiones());
+                exportador.GenerarPDFTotales(transAux, nombreFichero);
+            }
+
+            if (opcion == 2)
+            {
+                transAux = lista.GetTransacciones(lista.GetPrevisiones(
+                    modoVisualizacion, ordenacionPorFecha, fechaVisualizar));
+                exportador.GenerarPDFMensuales(transAux, nombreFichero);
+            }
+        }
     }
 
     private bool Agrupar()
@@ -281,6 +364,14 @@ public class GestorDeHomeAccounting
 
     private void MoverVertical(ConsoleKey flecha)
     {
+        int cantidad = 0;
+        if (visualizacionGastos)
+            cantidad = lista.GetGastos(modoVisualizacion, ordenacionPorFecha, 
+                fechaVisualizar).Count;
+        else
+            cantidad = lista.GetPrevisiones(modoVisualizacion, 
+                ordenacionPorFecha, fechaVisualizar).Count;
+
         if (flecha == ConsoleKey.UpArrow)
         {
             if (posicion > 1)
@@ -294,8 +385,7 @@ public class GestorDeHomeAccounting
 
         if (flecha == ConsoleKey.DownArrow)
         {
-            if (posicion < lista.GetGastos(modoVisualizacion,
-                            ordenacionPorFecha, fechaVisualizar).Count)
+            if (posicion < cantidad)
                 posicion++;
             if (posicion > finPagina)
             {
@@ -308,6 +398,17 @@ public class GestorDeHomeAccounting
     public void Ejecutar()
     {
         MenuUsuario();
-        MenuGastos();
+        if (iniciar)
+        {
+            lista = new ListaDeGastosYPrevisiones(uActual.GetSobrenombre());
+            do
+            {
+                if (visualizacionGastos)
+                    MenuGastos();
+                else
+                    MenuPrevisiones();
+            } while (!terminado);
+        } 
+        Console.WriteLine("Gracias por usar AR Software");
     }
 }

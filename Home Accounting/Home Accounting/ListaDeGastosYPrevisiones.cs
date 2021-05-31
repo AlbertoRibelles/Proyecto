@@ -45,6 +45,29 @@ public class ListaDeGastosYPrevisiones
         return auxLista;
     }
 
+    public List<Transaccion> GetTransacciones(List<Gasto> gastos)
+    {
+        List<Transaccion> auxTrans = new List<Transaccion>();
+        
+        foreach(Gasto g in gastos)
+        {
+            auxTrans.Add(g);
+        }
+
+        return auxTrans;
+    }
+    public List<Transaccion> GetTransacciones(List<Prevision> previsones)
+    {
+        List<Transaccion> auxTrans = new List<Transaccion>();
+
+        foreach (Prevision p in previsones)
+        {
+            auxTrans.Add(p);
+        }
+
+        return auxTrans;
+    }
+
     public List<Gasto> GetGastos()
     {
         return gastos;
@@ -91,9 +114,9 @@ public class ListaDeGastosYPrevisiones
         List<Prevision> auxLista = new List<Prevision>();
 
         if (!ordenacionPorFecha)
-            OrdenarGastosPorCategoria();
+            OrdenarPrevisionesPorCategoria();
         else
-            OrdenarGastosPorFecha();
+            OrdenarPrevisionesPorFecha();
 
         foreach (Prevision p in previsiones)
         {
@@ -122,7 +145,7 @@ public class ListaDeGastosYPrevisiones
 
     public int GetProximoIDPrevision()
     {
-        return gastos.Count + 1;
+        return previsiones.Count + 1;
     }
 
     public void Anyadir(Gasto g)
@@ -134,7 +157,7 @@ public class ListaDeGastosYPrevisiones
     public void Anyadir(Prevision p)
     {
         previsiones.Add(p);
-        OrdenarGastosPorFecha();
+        OrdenarPrevisionesPorFecha();
     }
 
     public void Modificar(Gasto g)

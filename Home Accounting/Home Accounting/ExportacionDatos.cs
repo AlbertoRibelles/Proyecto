@@ -20,13 +20,13 @@ public class ExportacionDatos
             BaseColor.BLACK);
     }
 
-    public void GenerarCsv(List<Gasto> gastos, string nombreFichero)
+    public void GenerarCsv(List<Transaccion> transacciones, string nombreFichero)
     {
         StringBuilder sb = new StringBuilder();
         string rutaInicial = AppDomain.CurrentDomain.BaseDirectory;
         string rutaFinal = Path.Combine(rutaInicial, nombreFichero + ".csv");
         string encabezado = "";
-        PropertyInfo[] tipos = typeof(Gasto).GetProperties();
+        PropertyInfo[] tipos = typeof(Transaccion).GetProperties();
 
         if (!File.Exists(rutaFinal))
         {
@@ -43,7 +43,7 @@ public class ExportacionDatos
             sw.Write(sb.ToString());
             sw.Close();
         }
-        foreach (Gasto obj in gastos)
+        foreach (Transaccion t in transacciones)
         {
             sb = new StringBuilder();
             string linea = "";
@@ -53,12 +53,12 @@ public class ExportacionDatos
                 {
                     if (prop.Name == "Fecha")
                     {
-                        string fecha = obj.ToStringFecha();
+                        string fecha = t.ToStringFecha();
                         linea += "\"" + fecha + "\";";
                     }
                     
                     else
-                        linea += "\"" + prop.GetValue(obj, null) + "\";";
+                        linea += "\"" + prop.GetValue(t, null) + "\";";
                 }
             }
             linea = linea.Substring(0, linea.Length - 1);
@@ -69,7 +69,42 @@ public class ExportacionDatos
         }
     }
 
-    public void GenerarPDFGTotales(List<Gasto> gastos, string nombreFichero)
+    public void GenerarExcel(List<Transaccion> transacciones, string nombreFichero)
+    {
+        IWorkbook libro = new XSSFWorkbook();
+        ISheet hojaDeCalculo = libro.CreateSheet("Transacciones");
+
+        int indiceFila = 0;
+        IRow fila = hojaDeCalculo.CreateRow(indiceFila);
+        fila.CreateCell(0).SetCellValue("Fecha");
+        fila.CreateCell(1).SetCellValue("Concepto");
+        fila.CreateCell(2).SetCellValue("Importe");
+        fila.CreateCell(3).SetCellValue("Categoria");
+        fila.CreateCell(4).SetCellValue("Cuenta");
+        indiceFila++;
+
+        foreach (Transaccion t in transacciones)
+        {
+            fila = hojaDeCalculo.CreateRow(indiceFila);
+            fila.CreateCell(0).SetCellValue(t.ToStringFecha());
+            fila.CreateCell(1).SetCellValue(t.Concepto);
+            fila.CreateCell(2).SetCellValue(Math.Round(t.Importe, 2));
+            fila.CreateCell(3).SetCellValue(t.Categoria);
+            fila.CreateCell(4).SetCellValue(t.Cuenta);
+            indiceFila++;
+        }
+
+        for (int i = 0; i <= transacciones.Count; i++)
+            hojaDeCalculo.AutoSizeColumn(i);
+
+        using (FileStream fileData = new FileStream(nombreFichero + ".xlsx"
+            , FileMode.Create))
+        {
+            libro.Write(fileData);
+        }
+    }
+
+    public void GenerarPDFTotales(List<Transaccion> transacciones, string nombreFichero)
     {
         Document doc = new Document(PageSize.LETTER);
         PdfWriter writer = PdfWriter.GetInstance(doc, 
@@ -88,7 +123,7 @@ public class ExportacionDatos
 
         InsertarEncabezadoTablaPDF();
 
-        RellenarTablaPDF(gastos);
+        RellenarTablaPDF(transacciones);
 
         doc.Add(tblGastosTotales);
 
@@ -125,7 +160,7 @@ public class ExportacionDatos
         tblGastosTotales.AddCell(clCuenta);
     }
 
-    public void RellenarTablaPDF(List<Gasto> gastos)
+    public void RellenarTablaPDF(List<Transaccion> transacciones)
     {
         PdfPCell clFecha;
         PdfPCell clConcepto;
@@ -133,17 +168,17 @@ public class ExportacionDatos
         PdfPCell clCategoria;
         PdfPCell clCuenta;
 
-        for (int i = 0; i < gastos.Count; i++)
+        for (int i = 0; i < transacciones.Count; i++)
         {
-            clFecha = new PdfPCell(new Phrase(gastos[i].ToStringFecha(), fuente));
+            clFecha = new PdfPCell(new Phrase(transacciones[i].ToStringFecha(), fuente));
             clFecha.BorderWidth = 0;
-            clConcepto = new PdfPCell(new Phrase(gastos[i].Concepto, fuente));
+            clConcepto = new PdfPCell(new Phrase(transacciones[i].Concepto, fuente));
             clConcepto.BorderWidth = 0;
-            clImporte = new PdfPCell(new Phrase(gastos[i].Importe.ToString(), fuente));
+            clImporte = new PdfPCell(new Phrase(transacciones[i].Importe.ToString(), fuente));
             clImporte.BorderWidth = 0;
-            clCategoria = new PdfPCell(new Phrase(gastos[i].Categoria, fuente));
+            clCategoria = new PdfPCell(new Phrase(transacciones[i].Categoria, fuente));
             clCategoria.BorderWidth = 0;
-            clCuenta = new PdfPCell(new Phrase(gastos[i].Cuenta, fuente));
+            clCuenta = new PdfPCell(new Phrase(transacciones[i].Cuenta, fuente));
             clCuenta.BorderWidth = 0;
 
             tblGastosTotales.AddCell(clFecha);
@@ -154,7 +189,7 @@ public class ExportacionDatos
         }
     }
 
-    public void GenerarPDFGMensuales(List<Gasto> gastos, string nombreFichero)
+    public void GenerarPDFMensuales(List<Transaccion> transacciones, string nombreFichero)
     {
         Document doc = new Document(PageSize.LETTER);
         PdfWriter writer = PdfWriter.GetInstance(doc,
@@ -173,7 +208,7 @@ public class ExportacionDatos
 
         InsertarEncabezadoSimple();
 
-        RellenarTablaSimple(gastos);
+        RellenarTablaSimple(transacciones);
 
         doc.Add(tblGastosMensuales);
 
@@ -195,43 +230,43 @@ public class ExportacionDatos
         tblGastosMensuales.AddCell(clTitulo2);
     }
 
-    public void RellenarTablaSimple(List<Gasto> gastos)
+    public void RellenarTablaSimple(List<Transaccion> transacciones)
     {
         PdfPCell clCampo;
         PdfPCell clValor;
 
-        for (int i = 0; i < gastos.Count; i++)
+        for (int i = 0; i < transacciones.Count; i++)
         {
             clCampo = new PdfPCell(new Phrase("Fecha", fuente));
             clCampo.BorderWidth = 0;
-            clValor = new PdfPCell(new Phrase(gastos[i].ToStringFecha(), 
+            clValor = new PdfPCell(new Phrase(transacciones[i].ToStringFecha(), 
                 fuente));
             clValor.BorderWidth = 0;
             tblGastosMensuales.AddCell(clCampo);
             tblGastosMensuales.AddCell(clValor);
             clCampo = new PdfPCell(new Phrase("Concepto", fuente));
             clCampo.BorderWidth = 0;
-            clValor = new PdfPCell(new Phrase(gastos[i].Concepto, 
+            clValor = new PdfPCell(new Phrase(transacciones[i].Concepto, 
                 fuente));
             clValor.BorderWidth = 0;
             tblGastosMensuales.AddCell(clCampo);
             tblGastosMensuales.AddCell(clValor);
             clCampo = new PdfPCell(new Phrase("Importe", fuente));
             clCampo.BorderWidth = 0;
-            clValor = new PdfPCell(new Phrase(gastos[i].Importe.ToString(), 
+            clValor = new PdfPCell(new Phrase(transacciones[i].Importe.ToString(), 
                 fuente));
             clValor.BorderWidth = 0;
             tblGastosMensuales.AddCell(clCampo);
             tblGastosMensuales.AddCell(clValor);
             clCampo = new PdfPCell(new Phrase("Cuenta", fuente));
             clCampo.BorderWidth = 0;
-            clValor = new PdfPCell(new Phrase(gastos[i].Cuenta, fuente));
+            clValor = new PdfPCell(new Phrase(transacciones[i].Cuenta, fuente));
             clValor.BorderWidth = 0;
             tblGastosMensuales.AddCell(clCampo);
             tblGastosMensuales.AddCell(clValor);
             clCampo = new PdfPCell(new Phrase("Categoria", fuente));
             clCampo.BorderWidth = 0;
-            clValor = new PdfPCell(new Phrase(gastos[i].Categoria, 
+            clValor = new PdfPCell(new Phrase(transacciones[i].Categoria, 
                 fuente));
             clValor.BorderWidth = 0;
             tblGastosMensuales.AddCell(clCampo);
@@ -243,40 +278,5 @@ public class ExportacionDatos
             tblGastosMensuales.AddCell(clCampo);
             tblGastosMensuales.AddCell(clValor);
         }
-    }
-
-    public void GenerarExcel(List<Gasto> gastos, string nombreFichero)
-    {
-        IWorkbook libro = new XSSFWorkbook();
-        ISheet hojaDeCalculo = libro.CreateSheet("Gastos");
-
-        int indiceFila = 0;
-        IRow fila = hojaDeCalculo.CreateRow(indiceFila);
-        fila.CreateCell(0).SetCellValue("Fecha");
-        fila.CreateCell(1).SetCellValue("Concepto");
-        fila.CreateCell(2).SetCellValue("Importe");
-        fila.CreateCell(3).SetCellValue("Categoria");
-        fila.CreateCell(4).SetCellValue("Cuenta");
-        indiceFila++;
-
-        foreach (Gasto g in gastos)
-        {
-            fila = hojaDeCalculo.CreateRow(indiceFila);
-            fila.CreateCell(0).SetCellValue(g.ToStringFecha());
-            fila.CreateCell(1).SetCellValue(g.Concepto);
-            fila.CreateCell(2).SetCellValue(Math.Round(g.Importe,2));
-            fila.CreateCell(3).SetCellValue(g.Categoria);
-            fila.CreateCell(4).SetCellValue(g.Cuenta);
-            indiceFila++;
-        }
-
-        for (int i = 0; i <= gastos.Count; i++)
-            hojaDeCalculo.AutoSizeColumn(i);
-
-        using (FileStream fileData = new FileStream(nombreFichero + ".xlsx"
-            , FileMode.Create))
-        {
-            libro.Write(fileData);
-        } 
     }
 }
